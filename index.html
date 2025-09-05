@@ -6,108 +6,59 @@
     <title>BLE Trigger</title>
     <style>
         body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #f3f4f6;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            color: #1f2937;
+            font-family: sans-serif;
             text-align: center;
+            margin-top: 80px;
+            background: #f9f9f9;
         }
-        .container {
-            background-color: #ffffff;
-            padding: 2.5rem;
-            border-radius: 1rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            width: 90%;
-            max-width: 400px;
+        .status {
+            margin: 24px auto;
+            font-size: 1.1em;
+            color: #333;
+            max-width: 480px;
         }
-        h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-        p {
-            font-size: 1rem;
-            color: #4b5563;
-            margin-bottom: 0;
-        }
-        .status-box {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            background-color: #e5e7eb;
-            color: #1f2937;
-            font-weight: 500;
-        }
+        .success { color: #1976d2; }
+        .error { color: #d32f2f; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Bluetooth Status</h1>
-        <p>Attempting to connect to your Arduino...</p>
-        <div class="status-box">
-            <h2 id="status">Waiting for user permission...</h2>
-            <p id="message"></p>
-        </div>
-    </div>
-    
+    <h1>Curtain Alarm BLE Trigger</h1>
+    <div class="status" id="status">Initializing BLE trigger...</div>
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const statusElement = document.getElementById('status');
-            const messageElement = document.getElementById('message');
-
-            const setStatus = (text) => {
-                statusElement.textContent = text;
-            };
-
-            const setMessage = (text) => {
-                messageElement.textContent = text;
-            };
-
+        async function triggerBLE() {
+            const status = document.getElementById('status');
+            status.textContent = 'Requesting Bluetooth device...';
             const CUSTOM_SERIAL_SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb';
             const SERIAL_COMM_CHARACTERISTIC_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb';
             const COMMAND_TO_SEND = '1';
 
             try {
-                setMessage('Requesting device access...');
                 const device = await navigator.bluetooth.requestDevice({
                     filters: [{ services: [CUSTOM_SERIAL_SERVICE_UUID] }]
                 });
-
-                setStatus('Found device');
-                setMessage('Connecting...');
+                status.textContent = 'Connecting to device...';
                 const server = await device.gatt.connect();
-
-                setStatus('Connected!');
-                setMessage('Getting service...');
+                status.textContent = 'Getting primary service...';
                 const service = await server.getPrimaryService(CUSTOM_SERIAL_SERVICE_UUID);
-
-                setMessage('Getting characteristic...');
+                status.textContent = 'Getting characteristic...';
                 const characteristic = await service.getCharacteristic(SERIAL_COMM_CHARACTERISTIC_UUID);
-
-                setStatus('Ready to send');
-                setMessage('Encoding and writing value...');
+                status.textContent = 'Sending command...';
                 const encoder = new TextEncoder();
                 const data = encoder.encode(COMMAND_TO_SEND);
-
                 await characteristic.writeValue(data);
-
-                setStatus('Success!');
-                setMessage(`Command "${COMMAND_TO_SEND}" sent successfully.`);
-
-                // Close the tab after a delay to ensure the command has time to send.
+                status.textContent = 'Command sent successfully!';
+                status.classList.remove('error');
+                status.classList.add('success');
                 setTimeout(() => {
                     window.close();
                 }, 2000);
-
             } catch (error) {
-                setStatus('Error!');
-                setMessage(`Failed to connect or send command: ${error.message}`);
+                status.textContent = 'Error: ' + error;
+                status.classList.remove('success');
+                status.classList.add('error');
             }
-        });
+        }
+        document.addEventListener('DOMContentLoaded', triggerBLE);
     </script>
 </body>
 </html>
