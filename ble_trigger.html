@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLE Trigger</title>
+</head>
+<body>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // These are the UUIDs for your specific BLE module and its serial service.
+            // This code assumes the full 128-bit UUIDs based on the common base UUID.
+            const CUSTOM_SERIAL_SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb';
+            const SERIAL_COMM_CHARACTERISTIC_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb';
+            const COMMAND_TO_SEND = '1';
+
+            try {
+                // Requesting device access. This will trigger the Bluetooth permission pop-up.
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: [CUSTOM_SERIAL_SERVICE_UUID] }]
+                });
+
+                // Connecting to the GATT server.
+                const server = await device.gatt.connect();
+
+                // Getting the primary service.
+                const service = await server.getPrimaryService(CUSTOM_SERIAL_SERVICE_UUID);
+
+                // Getting the characteristic to write to.
+                const characteristic = await service.getCharacteristic(SERIAL_COMM_CHARACTERISTIC_UUID);
+
+                // Encoding the command string to an array of bytes.
+                const encoder = new TextEncoder();
+                const data = encoder.encode(COMMAND_TO_SEND);
+
+                // Writing the value to the characteristic.
+                await characteristic.writeValue(data);
+
+                console.log(`Command "${COMMAND_TO_SEND}" sent successfully!`);
+
+                // Close the tab after a delay to ensure the command has time to send.
+                setTimeout(() => {
+                    window.close();
+                }, 2000);
+
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
